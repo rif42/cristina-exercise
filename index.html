@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Population by Time Zone</title>
 <meta name="description" content="Total population per time zone, charted from countries.dev city data.">
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+<script src="https://cdn.plot.ly/plotly-basic-2.35.2.min.js" defer></script>
 <style>
 :root{color-scheme:light dark;--fg:#111418;--muted:#5b6470;--bg:#fbfbfc;--surface:#fff;--border:#e3e6ea;--accent:#1d4ed8}
 @media (prefers-color-scheme:dark){:root{--fg:#e6e9ee;--muted:#9aa4b2;--bg:#0f1216;--surface:#151a20;--border:#252d38;--accent:#7aa2ff}}
@@ -27,7 +27,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em}
 <body>
 <main>
 <h1>Population by Time Zone</h1>
-<p class="meta">444 cities across 5 time zones. Source: <a href="https://countries.dev/" rel="noopener">countries.dev</a> city data, saved in <code>places.db</code>, last fetched 2026-11-27T03:09:30+00:00; page generated 2026-11-27 03:13 UTC.</p>
+<p class="meta">444 cities across 5 time zones. Source: <a href="https://countries.dev/" rel="noopener">countries.dev</a> city data, saved in <code>places.db</code>, last fetched 2026-11-27T03:19:30+00:00; page generated 2026-11-27 03:24 UTC.</p>
 <p class="meta">Largest time zone: <strong>Asia/Jakarta</strong> — 68,794,489 people (80.8% of the total).</p>
 <figure>
 <div id="chart" class="chart" role="img" aria-label="Horizontal bar chart of population by time zone: Asia/Jakarta is largest with 68,794,489 people (444 cities across 5 time zones)."></div>
@@ -54,13 +54,11 @@ function cssVar(name, fallback) {
 function colors() {
   const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   return {
-    dark: dark,
     fg: cssVar("--fg", dark ? "#e6e9ee" : "#111418"),
     muted: cssVar("--muted", dark ? "#9aa4b2" : "#5b6470"),
     surface: cssVar("--surface", dark ? "#151a20" : "#ffffff"),
     border: cssVar("--border", dark ? "#252d38" : "#e3e6ea"),
-    accent: cssVar("--accent", dark ? "#7aa2ff" : "#1d4ed8"),
-    onBar: dark ? "#0f1216" : "#ffffff"
+    accent: cssVar("--accent", dark ? "#7aa2ff" : "#1d4ed8")
   };
 }
 
@@ -73,8 +71,6 @@ function draw() {
   const c = colors();
   const max = Math.max.apply(null, DATA.map(d => d.population));
   const gap = max * 0.015;
-  // Full numbers need ~130px per label; below 640px the plot is too narrow for them.
-  const narrow = window.innerWidth < 640;
   const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
   const value = d => narrow ? compact.format(d.population) : d.population.toLocaleString("en-US");
   const trace = {
@@ -125,11 +121,16 @@ function draw() {
 
 window.addEventListener("load", draw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
-// Redraw after the layout settles so the label format follows the new width.
+// Full numbers need ~130px per label; below 640px the labels switch to compact.
+// Plotly's responsive layout already resizes the SVG, so redraw only at the flip.
+let narrow = window.innerWidth < 640;
 let resizeTimer = 0;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(draw, 150);
+  resizeTimer = setTimeout(() => {
+    const next = window.innerWidth < 640;
+    if (next !== narrow) { narrow = next; draw(); }
+  }, 150);
 });
 </script>
 </body>

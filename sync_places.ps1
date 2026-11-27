@@ -124,7 +124,6 @@ function Register-Sync {
         -Principal $principal -Description "Fetch countries.dev city data into places.db every $IntervalMinutes minutes." `
         -Force | Out-Null
 
-    $task = Get-ScheduledTask -TaskName $TaskName
     $nextRun = (Get-ScheduledTaskInfo -TaskName $TaskName).NextRunTime
     Write-Host "registered '$TaskName': every $IntervalMinutes min, indefinitely"
     Write-Host "  action : powershell.exe $arguments"

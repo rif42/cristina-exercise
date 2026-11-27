@@ -5,7 +5,7 @@ Usage:
     python build_timezone_report.py [--db places.db] [--out index.html]
 
 The output is a single HTML file with the data embedded; Plotly itself is loaded
-from its versioned CDN, so the page renders when opened online and is ready to
+from the versioned plotly-basic CDN (1.1 MB, bar charts only), so the page renders when opened online and is ready to
 publish as-is with GitHub Pages. Requires only the Python standard library.
 """
 
@@ -41,7 +41,7 @@ PAGE = Template("""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>$title</title>
 <meta name="description" content="Total population per time zone, charted from countries.dev city data.">
-<script src="https://cdn.plot.ly/plotly-$plotly_version.min.js" defer></script>
+<script src="https://cdn.plot.ly/plotly-basic-$plotly_version.min.js" defer></script>
 <style>
 :root{color-scheme:light dark;--fg:#111418;--muted:#5b6470;--bg:#fbfbfc;--surface:#fff;--border:#e3e6ea;--accent:#1d4ed8}
 @media (prefers-color-scheme:dark){:root{--fg:#e6e9ee;--muted:#9aa4b2;--bg:#0f1216;--surface:#151a20;--border:#252d38;--accent:#7aa2ff}}
@@ -86,13 +86,11 @@ function cssVar(name, fallback) {
 function colors() {
   const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   return {
-    dark: dark,
     fg: cssVar("--fg", dark ? "#e6e9ee" : "#111418"),
     muted: cssVar("--muted", dark ? "#9aa4b2" : "#5b6470"),
     surface: cssVar("--surface", dark ? "#151a20" : "#ffffff"),
     border: cssVar("--border", dark ? "#252d38" : "#e3e6ea"),
-    accent: cssVar("--accent", dark ? "#7aa2ff" : "#1d4ed8"),
-    onBar: dark ? "#0f1216" : "#ffffff"
+    accent: cssVar("--accent", dark ? "#7aa2ff" : "#1d4ed8")
   };
 }
 
@@ -105,8 +103,6 @@ function draw() {
   const c = colors();
   const max = Math.max.apply(null, DATA.map(d => d.population));
   const gap = max * 0.015;
-  // Full numbers need ~130px per label; below 640px the plot is too narrow for them.
-  const narrow = window.innerWidth < 640;
   const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
   const value = d => narrow ? compact.format(d.population) : d.population.toLocaleString("en-US");
   const trace = {
@@ -157,11 +153,16 @@ function draw() {
 
 window.addEventListener("load", draw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
-// Redraw after the layout settles so the label format follows the new width.
+// Full numbers need ~130px per label; below 640px the labels switch to compact.
+// Plotly's responsive layout already resizes the SVG, so redraw only at the flip.
+let narrow = window.innerWidth < 640;
 let resizeTimer = 0;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(draw, 150);
+  resizeTimer = setTimeout(() => {
+    const next = window.innerWidth < 640;
+    if (next !== narrow) { narrow = next; draw(); }
+  }, 150);
 });
 </script>
 </body>
